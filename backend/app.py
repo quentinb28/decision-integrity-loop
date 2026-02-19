@@ -64,6 +64,20 @@ def get_values():
     values = extract_values(data['anchor'], os.getenv('OPENAI_API_KEY'))  # Ensure the API key is set in your environment
     return jsonify({"values": values})
 
+# Route for generating pairwise questions
+@identity_routes.route('/api/generate-pairwise-questions', methods=['POST'])
+def generate_pairwise_questions_route():
+    data = request.json
+    questions = generate_pairwise_questions(data['values'], os.getenv('OPENAI_API_KEY'))
+    return jsonify({"questions": questions})
+
+# Route for generating options
+@identity_routes.route('/api/generate-options', methods=['POST'])
+def generate_options_route():
+    data = request.json
+    options = generate_options(data['decision'], data['values'], os.getenv('OPENAI_API_KEY'))
+    return jsonify({"options": options})
+
 # Run the application
 if __name__ == '__main__':
     app.run(debug=True)
