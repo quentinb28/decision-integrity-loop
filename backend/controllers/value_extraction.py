@@ -3,11 +3,11 @@ import openai
 def extract_values(anchor_text, openai_api_key):
     openai.api_key = openai_api_key
     prompt = (
-        f"Given the following identity anchor: '{anchor_text}', 
+        f"""Given the following identity anchor: '{anchor_text}', 
         which 5 values from the list 
         (Security, Belonging, Autonomy, Achievement, Status, 
         Integrity, Growth, Contribution, Pleasure, Meaning) 
-        are most relevant?"
+        are most relevant?"""
     )
     
     response = openai.ChatCompletion.create(
