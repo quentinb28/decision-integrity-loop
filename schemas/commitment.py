@@ -6,6 +6,7 @@ class CommitmentCreate(BaseModel):
     decision_id: int
     user_id: str
     next_step: str
-    deadline: datetime
-    self_generated: bool
-    created_at: datetime
+    start_at: datetime
+    due_at: datetime
+    source: str
+    status: str

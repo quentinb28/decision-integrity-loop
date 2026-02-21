@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, BackgroundTasks, Depends
 from db.base import Base
@@ -7,14 +7,14 @@ from db.session import engine, SessionLocal
 from models.identity_anchor import IdentityAnchor
 from models.value_compass import ValueCompass
 from models.value_score import ValueScore
-from models.decision import Decision
+from models.decision import DecisionContext
 from models.commitment import Commitment
 from models.execution import Execution
 
 from schemas.identity_anchor import IdentityAnchorCreate
 # from schemas.value_compass import ValueCompassCreate
 # from schemas.value_score import ValueScoreCreate
-from schemas.decision import DecisionCreate
+from schemas.decision import DecisionContextCreate
 from schemas.commitment import CommitmentCreate
 from schemas.execution import ExecutionCreate
 
@@ -52,6 +52,7 @@ def create_identity_anchor(identity_anchor: IdentityAnchorCreate):
         # --- create value compass ---
         db_value_compass = ValueCompass(
             identity_anchor_id=db_identity_anchor.id,
+            user_id=db_identity_anchor.user_id,
             created_at=db_identity_anchor.created_at
             )
         
@@ -107,15 +108,21 @@ def get_active_identity_anchor(user_id: str):
 #         .first()
 #     )
 
-@app.post("/decisions")
-def create_decision(decision: DecisionCreate):
+@app.post("/decision_contexts")
+def create_decision_context(decision_context: DecisionContextCreate):
 
     db = SessionLocal()
 
-    db_decision = Decision(
-        user_id=decision.user_id,
-        decision_id=decision.decision_id,
-        description=decision.description
+    latest_value_compass = db.query(ValueCompass).filter(
+            ValueCompass.user_id == decision_context.user_id
+        ).order_by(
+            ValueCompass.created_at.desc()
+        ).first()
+
+    db_decision = DecisionContext(
+        user_id=decision_context.user_id,
+        description=decision_context.description,
+        value_compass_id=latest_value_compass
     )
 
     db.add(db_decision)
@@ -131,13 +138,13 @@ def create_commitment(commitment: CommitmentCreate):
     db = SessionLocal()
 
     db_commitment = Commitment(
-        commitment_id=commitment.commitment_id,
         decision_id=commitment.decision_id,
         user_id=commitment.user_id,
         next_step=commitment.next_step,
-        deadline=commitment.deadline,
-        self_generated=commitment.self_generated,
-        created_at=commitment.created_at
+        start_at=datetime.utcnow,
+        due_at=datetime.utcnow() + timedelta(hours=48),
+        source=commitment.source,
+        status=commitment.status
     )
 
     db.add(db_commitment)

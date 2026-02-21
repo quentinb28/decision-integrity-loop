@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
 from db.base import Base
 from sqlalchemy import ForeignKey
 
@@ -7,4 +7,5 @@ class ValueCompass(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     identity_anchor_id = Column(Integer, ForeignKey("identity_anchors.id"))
+    user_id = Column(String)
     created_at = Column(DateTime)

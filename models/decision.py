@@ -1,10 +1,13 @@
-from sqlalchemy import Column, String, Boolean
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, DateTime
 from db.base import Base
+from sqlalchemy import ForeignKey
 
-class Decision(Base):
-    __tablename__ = "decisions"
+class DecisionContext(Base):
+    __tablename__ = "decision_contexts"
 
-    user_id = Column(String, primary_key=True, index=True)
-    decision_id = Column(String)
-    description = Column(String)
-    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String)
+    descritpion = Column(String)
+    value_compass_id = Column(Integer, ForeignKey("value_compasses.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
