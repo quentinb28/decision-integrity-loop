@@ -63,7 +63,7 @@ def create_identity_anchor(identity_anchor: IdentityAnchorCreate):
         # --- extract top values from identity anchor ---
         top_values = extract_top_values([db_identity_anchor.description])
 
-        # --- create value compass ---
+        # --- create value score pairs ---
         for (value, score) in top_values:
             db_value_score = ValueScore(
                 value_compass_id=db_value_compass.id,
