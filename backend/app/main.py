@@ -26,7 +26,7 @@ from schemas.commitment import CommitmentCreate
 from schemas.execution import ExecutionCreate
 
 from app.ai.extract_top_values import extract_top_values
-from app.ai.generate_suggestions import generate_suggestions
+from app.ai.rank_commitments_from_valued import rank_commitments_from_valued
 from app.ai.generate_commitment_appraisal import generate_commitment_appraisal
 from app.ai.compute_capacity_score import compute_capacity_score
 
@@ -114,15 +114,9 @@ def get_home_state(db: DBSession, user_id: str = Depends(get_current_user)):
 @app.post("/decision_context")
 def create_decision_context(decision_context: DecisionContextCreate, db: DBSession, user_id: str = Depends(get_current_user)):
 
-    latest_value_compass = db.query(ValueCompass).filter(
-            ValueCompass.user_id == user_id).order_by(
-            ValueCompass.created_at.desc()).first(
-    )
-
     db_decision = DecisionContext(
         user_id=user_id,
-        description=decision_context.description,
-        value_compass_id=latest_value_compass.id
+        description=decision_context.description
     )
 
     db.add(db_decision)
@@ -131,25 +125,48 @@ def create_decision_context(decision_context: DecisionContextCreate, db: DBSessi
 
     db.close()
 
-    return {"message": "Decision logged"}
-    
-@app.get("/identity-anchor/active")
-def get_active_identity_anchor(db: DBSession, user_id: str = Depends(get_current_user)):
+    return {"message": "Decision Context logged"}
 
-    identity_anchor = db.query(
-        IdentityAnchor).filter(
-        IdentityAnchor.user_id == user_id).order_by(
-        IdentityAnchor.created_at.desc()).first(
+@app.post("/prioritization_filter")
+def create_prioritization_filter(db: DBSession, user_id: str = Depends(get_current_user)):
+    # 1. Get last decision context 
+    latest_decision_context = db.query(DecisionContext).filter(
+        DecisionContext.user_id == user_id).order_by(
+        DecisionContext.created_at.desc()).first(
     )
 
-    if not identity_anchor:
-        return {"exists": False}
+    if not latest_decision_context:
+        return {"error": "Decision context not found"}
+
+    # 2. Check if latest_value_compass exists
+    latest_value_compass = db.query(ValueCompass).filter(
+        ValueCompass.user_id == user_id).order_by(
+        ValueCompass.created_at.desc()).first(
+    )
+
+    if latest_value_compass:
+
+        # fetch top 3 values from linked VC
+        top_values = db.query(ValueScore).filter(
+            ValueScore.value_compass_id == latest_value_compass.id).order_by(
+            ValueScore.scores.desc()).limit(3).all()
+        
+        values_str = "\n".join(
+            [f"{v.values}: {round(v.scores, 2)}"for v in top_values]
+        )
+
+        # create priorities from user value compass
+        priorities = rank_commitments_from_valued(latest_decision_context.description, values_str)
+
+    else:
+
+        # create priorities from universal regret patterns
+        # priorities = function2(latest_decision_context.description, values_str)
+        return {"error": "Value compass not found"}
 
     return {
-        "exists": True,
-        "id": identity_anchor.id,
-        "description": identity_anchor.description,
-        "created_at": identity_anchor.created_at
+        f"priority{i+1}": value
+        for i, value in enumerate(priorities)
     }
 
 @app.post("/identity_anchor")
@@ -196,7 +213,26 @@ def create_identity_anchor(identity_anchor: IdentityAnchorCreate, db: DBSession,
     finally:
         db.close()
 
-@app.get("/value-compass")
+@app.get("/identity-anchor/active")
+def get_active_identity_anchor(db: DBSession, user_id: str = Depends(get_current_user)):
+
+    identity_anchor = db.query(
+        IdentityAnchor).filter(
+        IdentityAnchor.user_id == user_id).order_by(
+        IdentityAnchor.created_at.desc()).first(
+    )
+
+    if not identity_anchor:
+        return {"exists": False}
+
+    return {
+        "exists": True,
+        "id": identity_anchor.id,
+        "description": identity_anchor.description,
+        "created_at": identity_anchor.created_at
+    }
+
+@app.get("/value-compass/active")
 def get_latest_value_compass(db: DBSession, user_id: str = Depends(get_current_user)):
 
     result = (
@@ -246,9 +282,9 @@ def create_adjusted_capacity(payload: AdjustedCapacityCreate, db: DBSession, use
     if adjusted_capacity >= 40:
         recommendation = "keep"
     elif adjusted_capacity >= 20:
-        recommendation = "reduce"
+        recommendation = "kneel"
     else:
-        recommendation = "defer"
+        recommendation = "kill"
 
     return {
         "baseline_capacity": payload.baseline_capacity,
