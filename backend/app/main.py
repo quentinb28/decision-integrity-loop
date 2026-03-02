@@ -19,11 +19,16 @@ from schemas.identity_anchor import IdentityAnchorCreate
 # from schemas.value_compass import ValueCompassCreate
 # from schemas.value_score import ValueScoreCreate
 from schemas.decision_context import DecisionContextCreate
+from schemas.capacity_snapshot import CapacitySnapshotCreate
+from schemas.commitment_appraisal import CommitmentAppraisalCreate
+from schemas.adjusted_capacity import AdjustedCapacityCreate
 from schemas.commitment import CommitmentCreate
 from schemas.execution import ExecutionCreate
 
 from app.ai.extract_top_values import extract_top_values
 from app.ai.generate_suggestions import generate_suggestions
+from app.ai.generate_commitment_appraisal import generate_commitment_appraisal
+from app.ai.compute_capacity_score import compute_capacity_score
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -105,6 +110,28 @@ def get_home_state(db: DBSession, user_id: str = Depends(get_current_user)):
             for c in active_commitments
         ]
     }
+
+@app.post("/decision_context")
+def create_decision_context(decision_context: DecisionContextCreate, db: DBSession, user_id: str = Depends(get_current_user)):
+
+    latest_value_compass = db.query(ValueCompass).filter(
+            ValueCompass.user_id == user_id).order_by(
+            ValueCompass.created_at.desc()).first(
+    )
+
+    db_decision = DecisionContext(
+        user_id=user_id,
+        description=decision_context.description,
+        value_compass_id=latest_value_compass.id
+    )
+
+    db.add(db_decision)
+    db.commit()
+    db.refresh(db_decision)
+
+    db.close()
+
+    return {"message": "Decision logged"}
     
 @app.get("/identity-anchor/active")
 def get_active_identity_anchor(db: DBSession, user_id: str = Depends(get_current_user)):
@@ -184,27 +211,51 @@ def get_latest_value_compass(db: DBSession, user_id: str = Depends(get_current_u
     
     return [row._asdict() for row in result]
 
-@app.post("/decision_context")
-def create_decision_context(decision_context: DecisionContextCreate, db: DBSession, user_id: str = Depends(get_current_user)):
+@app.post("/capacity_snapshot")
+def create_capacity_snapshot(capacity_snapshot: CapacitySnapshotCreate, db: DBSession, user_id: str = Depends(get_current_user)):
 
-    latest_value_compass = db.query(ValueCompass).filter(
-            ValueCompass.user_id == user_id).order_by(
-            ValueCompass.created_at.desc()).first(
+    capacity_score = compute_capacity_score(capacity_snapshot)
+
+    # 80–100 → High regulatory bandwidth
+    # 50–79 → Moderate
+    # 20–49 → Low
+    # 1–19 → High collapse risk
+
+    return {
+        "baseline_capacity": capacity_score
+    }
+
+@app.post("/commitment_appraisal")
+def create_commitment_appraisal(payload: CommitmentAppraisalCreate, db: DBSession, user_id: str = Depends(get_current_user)):
+
+    commitment_appraisal = generate_commitment_appraisal(payload.candidate_commitment)  # ∈ [1 – 10]
+
+    return {
+        "commitment_appraisal": commitment_appraisal    
+    }
+
+@app.post("/adjusted_capacity")
+def create_adjusted_capacity(payload: AdjustedCapacityCreate, db: DBSession, user_id: str = Depends(get_current_user)):
+
+    adjusted_capacity = int(
+        round(
+            max(1, payload.baseline_capacity * (1 - payload.commitment_appraisal / 10))
+        )
     )
 
-    db_decision = DecisionContext(
-        user_id=user_id,
-        description=decision_context.description,
-        value_compass_id=latest_value_compass.id
-    )
+    if adjusted_capacity >= 40:
+        recommendation = "keep"
+    elif adjusted_capacity >= 20:
+        recommendation = "reduce"
+    else:
+        recommendation = "defer"
 
-    db.add(db_decision)
-    db.commit()
-    db.refresh(db_decision)
-
-    db.close()
-
-    return {"message": "Decision logged"}
+    return {
+        "baseline_capacity": payload.baseline_capacity,
+        "commitment_load": payload.commitment_appraisal,
+        "adjusted_capacity": adjusted_capacity,
+        "recommendation": recommendation
+    }
 
 @app.post("/commitment/suggestions")
 def get_suggestions(db: DBSession, user_id: str = Depends(get_current_user)):
