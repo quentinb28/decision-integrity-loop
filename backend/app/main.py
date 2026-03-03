@@ -394,8 +394,9 @@ def create_execution(
     try:
         db_execution = Execution(
             commitment_id=payload.commitment_id,
+            user_id=user_id,
             outcome=payload.outcome,
-            comment=payload.comment,
+            prompt_response=payload.prompt_response,
         )
 
         db.add(db_execution)
@@ -406,13 +407,10 @@ def create_execution(
         )
 
         if not commitment:
-            return {"error": "Commitment not found"}
-
-        if payload.outcome == "completed":
-            commitment.status = "completed"
-
-        elif payload.outcome == "missed":
-            commitment.status = "missed"
+            raise ValueError("Commitment not found")
+        
+        # update column
+        commitment.status = payload.outcome
 
         db.commit()
 

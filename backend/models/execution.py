@@ -8,6 +8,7 @@ class Execution(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     commitment_id = Column(Integer, ForeignKey("commitments.id"))
-    outcome = Column(String) # ("done" | "partial" | "skipped")
-    comment= Column(String)
+    user_id = Column(String)
+    outcome = Column(String) # ("keep" | "kneel" | "kill")
+    prompt_response = Column(String)
     executed_at = Column(DateTime, default=datetime.utcnow)
