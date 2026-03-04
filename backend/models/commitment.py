@@ -11,7 +11,7 @@ class Commitment(Base):
     user_id = Column(String)
     commitment = Column(String)
     start_at = Column(DateTime, default=datetime.utcnow) # = created_at
-    due_at = Column(DateTime, default=datetime.utcnow() + timedelta(hours=48)) # start_at + 48 hours
+    due_at = Column(DateTime, default=datetime.utcnow() + timedelta(minutes=5)) # start_at + 48 hours
     source = Column(String) # ("self_endorsed" | "ai_generated")
     status = Column(String, default="active") # ("active" | "keep" | "kneel" | "kill" | "expired")
     

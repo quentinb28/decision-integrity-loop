@@ -479,3 +479,5 @@ def get_follow_through_rate(
 # kill -9 12569
 # sqlite3 test.db
 # http://127.0.0.1:8001/docs
+# crontab -e / EDITOR=nano crontab -e
+# crontab 48 hours: 0 0 */2 * *
