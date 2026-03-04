@@ -359,31 +359,6 @@ def create_commitment(
 
     return {"message": "Commitment created"}
 
-# background job every hour
-# UPDATE commitment
-# SET status = 'missed'
-# WHERE due_at < now
-# AND status = 'active'
-# def mark_missed_commitments():
-
-#     db = SessionLocal()
-
-#     try:
-#         overdue = db.query(Commitment)\
-#             .filter(
-#                 Commitment.due_at < datetime.utcnow(),
-#                 Commitment.status == "active"
-#             )\
-#             .all()
-
-#         for c in overdue:
-#             c.status = "missed"
-
-#         db.commit()
-
-#     finally:
-#         db.close()
-
 @app.post("/execution")
 def create_execution(
     payload: ExecutionCreate, 
