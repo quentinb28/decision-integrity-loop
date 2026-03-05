@@ -641,7 +641,8 @@ def get_follow_through_rate(
 # python -m uvicorn app.main:app --reload
 # lsof -i :8001
 # kill -9 12569
-# sqlite3 test.db
 # http://127.0.0.1:8001/docs
 # crontab -e / EDITOR=nano crontab -e
 # crontab 48 hours: 0 0 */2 * *
+# sqlite3 test.db
+# finder: DB Browser for SQLite
