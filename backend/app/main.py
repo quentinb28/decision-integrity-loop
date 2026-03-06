@@ -1,10 +1,10 @@
 from datetime import datetime
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from db.base import Base
-from db.session import engine
+from db.session import engine, get_db
 from typing import Annotated
 from sqlalchemy.orm import Session
-from db.session import get_db
 from app.auth import get_current_user
 
 from models.user import User
@@ -36,6 +36,15 @@ from app.ai.compute_capacity_score import compute_capacity_score
 import uuid
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # replace later with your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 Base.metadata.create_all(bind=engine)
 
 DBSession = Annotated[Session, Depends(get_db)]
@@ -635,11 +644,11 @@ def get_follow_through_rate(
 
 #     return {"Self Leadership Rate (SLR)": score}
 
-# python -m uvicorn app.main:app --reload --port 8001
+# python -m uvicorn app.main:app --reload --port 8000
 # python -m uvicorn app.main:app --reload
-# lsof -i :8001
+# lsof -i :8000
 # kill -9 12569
-# http://127.0.0.1:8001/docs
+# http://127.0.0.1:8000/docs
 # crontab -e / EDITOR=nano crontab -e
 # crontab 48 hours: 0 0 */2 * *
 # sqlite3 test.db
