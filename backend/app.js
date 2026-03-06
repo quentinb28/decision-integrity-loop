@@ -17,48 +17,75 @@ async function request(endpoint, options = {}) {
   return response.json();
 }
 
-export async function getHome() {
-  return request("/home", {
-    method: "GET"
-  });
+/* -------------------------
+HOME
+------------------------- */
+
+export function getHome() {
+  return request("/home", { method: "GET" });
 }
 
-export async function createIdentityAnchor(description) {
+/* -------------------------
+IDENTITY
+------------------------- */
+
+export function createIdentityAnchor(description) {
   return request("/identity_anchor", {
     method: "POST",
     body: JSON.stringify({ description })
   });
 }
 
-export async function createPrioritizationFilter(description) {
-  return request("/prioritization_filter", {
-    method: "POST",
-    body: JSON.stringify({ description })
-  });
-}
+/* -------------------------
+DECISION CONTEXT
+------------------------- */
 
-export async function createDecisionContext(description) {
+export function createDecisionContext(description) {
   return request("/decision_context", {
     method: "POST",
     body: JSON.stringify({ description })
   });
 }
 
-export async function createCapacitySnapshot(description) {
+/* -------------------------
+PRIORITIZATION FILTER
+(no payload required)
+------------------------- */
+
+export function createPrioritizationFilter() {
+  return request("/prioritization_filter", {
+    method: "POST"
+  });
+}
+
+/* -------------------------
+CAPACITY SNAPSHOT
+(payload depends on schema)
+------------------------- */
+
+export function createCapacitySnapshot(payload) {
   return request("/capacity_snapshot", {
     method: "POST",
-    body: JSON.stringify({ description })
+    body: JSON.stringify(payload)
   });
 }
 
-export async function createCommitmentCalibration(description) {
+/* -------------------------
+COMMITMENT CALIBRATION
+------------------------- */
+
+export function createCommitmentCalibration(payload) {
   return request("/commitment_calibration", {
     method: "POST",
-    body: JSON.stringify({ description })
+    body: JSON.stringify(payload)
   });
 }
 
-export async function createCommitment(commitment, source) {
+/* -------------------------
+CREATE COMMITMENT
+------------------------- */
+
+export function createCommitment(commitment, source) {
   return request("/commitment", {
     method: "POST",
     body: JSON.stringify({
@@ -68,7 +95,11 @@ export async function createCommitment(commitment, source) {
   });
 }
 
-export async function reportExecution(commitment_id, outcome, prompt_response) {
+/* -------------------------
+EXECUTION
+------------------------- */
+
+export function reportExecution(commitment_id, outcome, prompt_response) {
   return request("/execution", {
     method: "POST",
     body: JSON.stringify({
@@ -78,3 +109,19 @@ export async function reportExecution(commitment_id, outcome, prompt_response) {
     })
   });
 }
+
+/* -------------------------
+METRICS
+------------------------- */
+
+export function getFollowThroughRate() {
+  return request("/metrics/follow-through-rate", {
+    method: "GET"
+  });
+}
+
+// export function getSelfLeadershipRate() {
+//   return request("/metrics/self-leadership-rate", {
+//     method: "GET"
+//   });
+// }
