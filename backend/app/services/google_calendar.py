@@ -2,11 +2,9 @@ from dotenv import load_dotenv
 import os
 from fastapi import Depends
 from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
-from app.auth import get_current_user
-
-from models.user import User
 
 load_dotenv()
 
@@ -28,6 +26,10 @@ def create_calendar_event(
         client_id=GOOGLE_CLIENT_ID,
         client_secret=GOOGLE_CLIENT_SECRET
     )
+
+     # 🔁 refresh token if expired
+    if credentials.expired:
+        credentials.refresh(Request())
 
     service = build("calendar", "v3", credentials=credentials)
 

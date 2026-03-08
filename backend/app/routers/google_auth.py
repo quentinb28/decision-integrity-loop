@@ -1,3 +1,6 @@
+import os
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
 from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,6 +13,8 @@ from models.user import User
 
 router = APIRouter()
 
+code_verifier_store = {}
+
 
 @router.get("/auth/google")
 def connect_google(
@@ -21,11 +26,17 @@ def connect_google(
     authorization_url, state = flow.authorization_url(
         access_type="offline",
         prompt="consent",
-        include_granted_scopes="true",
-        state=current_user.id
+        state=current_user.id,
+        include_granted_scopes="true"
     )
 
-    return {"url": authorization_url}
+    # store verifier using state
+    code_verifier_store[state] = flow.code_verifier
+
+    return {
+        "url": authorization_url,
+        "state": state
+    }
 
 
 @router.get("/auth/google/callback")
@@ -36,14 +47,23 @@ def google_callback(
 
     flow = create_google_flow()
 
+    state = request.query_params.get("state")
+
+    code_verifier = code_verifier_store.get(state)
+
+    if not code_verifier:
+        raise HTTPException(status_code=400, detail="Missing code verifier")
+
     flow.fetch_token(
-        authorization_response=str(request.url)
+        authorization_response=str(request.url),
+        code_verifier=code_verifier
     )
 
     credentials = flow.credentials
 
     access_token = credentials.token
     refresh_token = credentials.refresh_token
+    expiry = credentials.expiry
 
     # user ID passed through OAuth state
     user_id = request.query_params.get("state")
@@ -66,6 +86,7 @@ def google_callback(
 
     user.google_access_token = access_token
     user.google_refresh_token = refresh_token
+    user.google_token_expiry = expiry 
 
     db.commit()
 

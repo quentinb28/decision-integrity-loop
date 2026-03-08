@@ -1,3 +1,5 @@
+import models
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from db.base import Base
@@ -6,18 +8,19 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from app.auth import get_current_user
 
-from app.routers import google_auth
-from app.routers import home
-from app.routers import identity
-from app.routers import prioritization_filter
-from app.routers import decision_context
-from app.routers import capacity_snapshot
-from app.routers import commitment_calibration
-from app.routers import commitment
-from app.routers import execution
-from app.routers import metrics
+from app.routers import (
+    google_auth,
+    home,
+    identity,
+    prioritization_filter,
+    decision_context,
+    capacity_snapshot,
+    commitment_calibration,
+    commitment,
+    execution,
+    metrics
+)
 
-import models
 
 app = FastAPI()
 

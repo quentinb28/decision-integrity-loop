@@ -45,9 +45,7 @@ def get_current_user(
         # auto-create user if first login
         if not user:
             user = User(
-                id=user_id,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                id=user_id
             )
 
             db.add(user)
